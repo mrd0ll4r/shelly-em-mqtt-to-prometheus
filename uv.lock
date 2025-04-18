@@ -1,0 +1,8 @@
+version = 1
+revision = 1
+requires-python = ">=3.10"
+
+[[package]]
+name = "energy-meter-mqtt-to-prometheus"
+version = "0.1.0"
+source = { virtual = "." }
