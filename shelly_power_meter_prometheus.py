@@ -11,7 +11,7 @@
 import json
 import logging
 import pika
-from prometheus_client import start_http_server, Gauge
+from prometheus_client import start_http_server, Gauge, Counter
 
 # Update with your power meter ID
 POWER_METER_ID = '08f9e0e957c8'
@@ -46,10 +46,10 @@ APPARENT_POWER = Gauge('energy_meter_apparent_power',
                        ['phase'])
 PF = Gauge('energy_meter_pf', 'Momentary power factor by phase', ['phase'])
 FREQ = Gauge('energy_meter_freq', 'Momentary freq in Hz by phase', ['phase'])
-TOTAL_ACTIVE_ENERGY = Gauge('energy_meter_total_active_energy',
+TOTAL_ACTIVE_ENERGY = Counter('energy_meter_total_active_energy',
                             'Total active energy in Wh by phase, or total for all phases',
                             ['phase'])
-TOTAL_ACTIVE_ENERGY_RETURNED = Gauge(
+TOTAL_ACTIVE_ENERGY_RETURNED = Counter(
     'energy_meter_total_active_energy_returned',
     'Total active energy returned in Wh by phase, or total for all phases',
     ['phase'])
