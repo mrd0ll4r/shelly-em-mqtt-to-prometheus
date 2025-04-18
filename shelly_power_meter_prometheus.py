@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # /// script
-# requires-python = ">=3.7"
+# requires-python = ">=3.10"
 # dependencies = [
 #   "pika>=1.3",
 #   "requests>=2",
@@ -10,9 +10,28 @@
 
 import json
 import logging
-
 import pika
 from prometheus_client import start_http_server, Gauge
+
+# Update with your power meter ID
+POWER_METER_ID = '08f9e0e957c8'
+
+# The port to host the Prometheus server on
+PROMETHEUS_PORT = 8000
+
+# The MQTT exchange to connect to
+MQTT_EXCHANGE_HOST='192.168.88.64'
+# The exchange name to connect to.
+# We use RabbitMQ as the broker, in which case this is a Topic exchange.
+MQTT_EXCHANGE_NAME='shack.mqtt'
+
+# The log level
+LOG_LEVEL = logging.INFO
+
+# MQTT topics for the energy meter.
+POWER_METER_MQTT_TOPIC = f'shellypro3em-{POWER_METER_ID}'
+POWER_METER_MQTT_TOPIC_STATUS_EM = f'{POWER_METER_MQTT_TOPIC}.status.em:0'
+POWER_METER_MQTT_TOPIC_STATUS_EMDATA = f'{POWER_METER_MQTT_TOPIC}.status.emdata:0'
 
 CURRENT = Gauge('energy_meter_current',
                 'Momentary current in A by phase, or total for all phases',
@@ -35,14 +54,7 @@ TOTAL_ACTIVE_ENERGY_RETURNED = Gauge(
     'Total active energy returned in Wh by phase, or total for all phases',
     ['phase'])
 
-POWER_METER_ID = '08f9e0e957c8'
-POWER_METER_MQTT_TOPIC = f'shellypro3em-{POWER_METER_ID}'
-POWER_METER_MQTT_TOPIC_STATUS_EM = f'{POWER_METER_MQTT_TOPIC}.status.em:0'
-POWER_METER_MQTT_TOPIC_STATUS_EMDATA = f'{POWER_METER_MQTT_TOPIC}.status.emdata:0'
-PROMETHEUS_PORT = 8000
-MQTT_EXCHANGE_HOST='192.168.88.64'
-
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=LOG_LEVEL)
 
 logging.info("listening for EM events on routing key %s",POWER_METER_MQTT_TOPIC_STATUS_EM)
 logging.info("listening for EMData events on routing key %s",POWER_METER_MQTT_TOPIC_STATUS_EMDATA)
@@ -55,11 +67,11 @@ connection = pika.BlockingConnection(
     pika.ConnectionParameters(host=MQTT_EXCHANGE_HOST))
 
 channel = connection.channel()
-channel.exchange_declare(exchange='shack.mqtt', exchange_type='topic')
+channel.exchange_declare(exchange=MQTT_EXCHANGE_NAME, exchange_type='topic')
 result = channel.queue_declare('', exclusive=True)
 queue_name = result.method.queue
 
-channel.queue_bind(exchange="shack.mqtt", queue=queue_name, routing_key="#")
+channel.queue_bind(exchange=MQTT_EXCHANGE_NAME, queue=queue_name, routing_key="#")
 
 def handle_em(body):
     # {
